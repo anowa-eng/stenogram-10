@@ -1,5 +1,5 @@
 from re import L
-from typing import List, Optional, TypeAlias, Union
+from typing import List, Mapping, Optional, Tuple, TypeAlias, Union
 
 from src.class_register import IndexedClass, indexed
 from tests.configure_logger import configure_logger
@@ -65,6 +65,9 @@ class Layer(IndexedClass['Layer']):
 # ---------------------------------------------------------------------------- #
 
 class Bindings:
+    Dictionary: TypeAlias = Mapping[int, List[int]]
+    Ungrouped: TypeAlias = List[Tuple[int, int]]
+
     def __init__(self, anchor: Layer, layer_above: Optional[Layer] = None, layer_below: Optional[Layer] = None):
         if not (layer_above or layer_below):
             raise Exception("Either layer_above or layer_below must be set")
@@ -174,5 +177,56 @@ class Layers:
     def bind(self, input_node: Node, output_node: Node):
         self.bind_id(input_node.id, output_node.id)
 
+    # ---------------------------------------------------------------------------- #
+
+    def ungroup_bindings(self, bindings: Bindings.Dictionary, is_sorted=True):
+        result = []
+
+        sorted_bindings = {}
+        if is_sorted:
+            for input_id, output_ids in sorted(bindings.items(), key=lambda x: x[0]):
+                output_ids.sort()
+                sorted_bindings[input_id] = output_ids
+            bindings = sorted_bindings
+
+        for input_id, output_ids in bindings.items():
+            result.extend((input_id, o) for o in output_ids)
+        
+        return result
+
+    # If node A is bound to nodes B, C, and D, and node E is bound to any of the
+    # three nodes B, C, or D, there is an option to automatically include Node E
+    # with Node A in a group of input nodes that go to all three nodes
+    def group_bindings_with_common_outputs(self,
+        bindings: Bindings.Dictionary | Bindings.Ungrouped,
+        group_common_inputs: bool = False
+    ):
+        if type(bindings) not in [dict, list]:
+            raise TypeError(f'bindings can only be of type dict or list, not {type(bindings)}')
+
+        if isinstance(bindings, dict):
+            bindings = self.ungroup_bindings(bindings)
+        
+        for i, binding in enumerate(bindings):
+            print(binding)
+
+    # ---------------------------------------------------------------------------- #
+
+    def _inputs_for_outputs_indices(self):
+        if len(self.bindings):
+            groups = [[self.bindings[0]]]
+            for i, (input_node_idx, output_node_idx) in enumerate(self.ungroup_bindings(self.bindings))[1:]:
+                prev_i_idx, prev_o_idx = self.bindings[i - 1]
+                has_same_input = input_node_idx == prev_i_idx
+                has_same_output = output_node_idx == prev_o_idx
+
+                if not (has_same_input or has_same_output):
+                    groups.append([])
+                groups[-1].append((input_node_idx, output_node_idx))
+            
+            return groups
+        else:
+            return [[]]
+    
 
 # TODO 07/06/2024: finish this
