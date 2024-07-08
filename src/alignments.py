@@ -361,6 +361,9 @@ class Alignments:
 
         if not layer:
             raise TypeError('Node is not within a Layer')
+
+        if not layer.bindings.layer_below:
+            raise Exception('Input node is at the last layer. Cannot traverse any further.')
         
         return layer.bindings.bindings_down[node.id]
     
@@ -375,6 +378,9 @@ class Alignments:
 
         if not layer:
             raise TypeError('Node is not within a Layer')
+        
+        if not layer.bindings.layer_above:
+            raise Exception('Output node is at the first layer. Cannot traverse any further.')
         
         return layer.bindings.bindings_up[node.id]
     
