@@ -1,4 +1,4 @@
-from src.layers import Layer, Alignments
+from src.alignments import Layer, Alignments
 from src.class_register import _registry
 from tests.configure_logger import configure_logger
 from tests.tools import sample_nodes, reset
