@@ -1,8 +1,4 @@
-from dataclasses import field
 from typing import Generic, List, Mapping, Type, TypeVar
-
-from attr import dataclass
-
 
 _registry: Mapping[str, list] = {}
 
