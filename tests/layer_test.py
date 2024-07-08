@@ -53,3 +53,46 @@ def test_layers():
 
     for i, layer in enumerate(layers.layers):
         assert layer.id == i
+
+
+def test_translation():
+    reset()
+
+    layers = Alignments(3)
+
+    nodes = sample_nodes(9)
+
+    layers.layers[0].set(nodes[0:3])
+    layers.layers[1].set(nodes[3:6])
+    layers.layers[2].set(nodes[6:9])
+
+    layers.bind(nodes[0], nodes[3])
+    layers.bind(nodes[1], nodes[4])
+    layers.bind(nodes[2], nodes[5])
+    layers.bind(nodes[3], nodes[6])
+    layers.bind(nodes[4], nodes[7])
+    layers.bind(nodes[5], nodes[8])
+
+    test_layers_logger.debug(str(layers.layers[0].bindings))
+
+    assert layers.output_ids_for_input(nodes[0]) == [3]
+    assert layers.input_ids_for_output(nodes[3]) == [0]
+
+    assert layers.output_ids_for_inputs(nodes[0:3]) == [3, 4, 5]
+    assert layers.output_ids_for_inputs(nodes[3:6]) == [6, 7, 8]
+
+    assert layers.input_ids_for_outputs(nodes[3:6]) == [0, 1, 2]
+    assert layers.input_ids_for_outputs(nodes[6:9]) == [3, 4, 5]
+
+    assert layers.get_output_nodes_for_input(nodes[0]) == [nodes[3]]
+    assert layers.get_output_nodes_for_input(nodes[3]) == [nodes[6]]
+
+    assert layers.get_input_nodes_for_output(nodes[3]) == [nodes[0]]
+    assert layers.get_input_nodes_for_output(nodes[6]) == [nodes[3]]
+
+    assert layers.get_output_nodes_for_inputs(nodes[0:3]) == nodes[3:6]
+    assert layers.get_output_nodes_for_inputs(nodes[3:6]) == nodes[6:9]
+
+    assert layers.get_input_nodes_for_outputs(nodes[3:6]) == nodes[0:3]
+    assert layers.get_input_nodes_for_outputs(nodes[6:9]) == nodes[3:6]
+    
