@@ -91,6 +91,14 @@ class Bindings:
         self.bindings_up = {}
         self.bindings_down = {}
 
+    def __str__(self):
+        str_ = ''
+        for k1, vv1 in self.bindings_up.items():
+            str_ += f"up: [{', '.join(str(Node.id(v)) for v in vv1)}] <- {Node.id(k1)}\n"
+        for k2, vv2 in self.bindings_down.items():
+            str_ += (f"down: {Node.id(k2)} -> [{', '.join(str(Node.id(v)) for v in vv2)}]\n")
+        return str_
+
     def check_above(self, output_id: int):
         '''
         Checks that the output node exists in the parent layer.
