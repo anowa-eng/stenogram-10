@@ -1,6 +1,7 @@
 from functools import reduce
 from typing import List, Mapping, Optional, Sequence, Tuple, TypeAlias, Union
 
+from src.aligner import Aligner
 from src.class_register import IndexedClass, indexed
 from tests.configure_logger import configure_logger
 
@@ -53,6 +54,10 @@ class Layer(IndexedClass['Layer']):
 
     def append(self, node: Node):
         self.nodes.append(node)
+        self.set_this_layer_for_all_nodes()
+
+    def extend(self, nodes: List[Node]):
+        self.nodes.extend(nodes)
         self.set_this_layer_for_all_nodes()
 
     def insert(self, id, *nodes: List[Node]):
@@ -221,6 +226,73 @@ class Alignments:
         layer_strs = [self._repr_indent(s, 2) for s in layer_strs]
         return f"Layers: [\n" + '\n'.join(layer_strs) + "\n]"
     
+    # ---------------- Instantiate alignments from aligner output ---------------- #
+
+    # Helper functions
+
+    @staticmethod
+    def _from_aligner_word(aligner_output: Aligner.Word) -> 'Alignments':
+        '''
+        Instantiates an Alignments object from the output of a single word that was run through the Aligner.
+
+        Args:
+            aligner_output: A single item from the output of an m2m-aligner run.
+        '''
+
+        # TODO (after detox): Add support for multiple aligner outputs
+
+        alignments = Alignments(2) # two layers from grapheme -> phoneme
+
+        nodes = zip(*aligner_output)
+
+        for (graphemes, phonemes) in nodes:
+            g_nodes = [Node(g) for g in graphemes]
+            p_nodes = [Node(p) for p in phonemes if p != '_']
+            alignments.layers[0].extend(g_nodes)
+            alignments.layers[1].extend(p_nodes)
+
+            # Bind the nodes to each other
+            for g in g_nodes:
+                for p in p_nodes:
+                    alignments.bind(g, p)
+
+        return alignments
+
+    @staticmethod
+    def _from_aligner_output(aligner_output: Aligner.Output) -> 'Alignments':
+        '''
+        Instantiates an Alignments object from the output of an m2m-aligner run.
+
+        Args:
+            aligner_output: The output of an m2m-aligner run.
+        '''
+        aligner_output = [Alignments._from_aligner_word(w) for w in aligner_output]
+        return aligner_output
+
+    # Public methods
+    
+    @staticmethod
+    def from_phrase(phrase: str) -> 'Alignments':
+        '''
+        Instantiates an Alignments object from a phrase.
+
+        Args:
+            phrase: The phrase to be aligned.
+        '''
+        aligner_output = Aligner.align(phrase)
+        return Alignments._from_aligner_output(aligner_output)
+    
+    @staticmethod
+    def from_word(word: str) -> 'Alignments':
+        '''
+        Instantiates an Alignments object from a word.
+
+        Args:
+            word: The word to be aligned.
+        '''
+        aligner_output = Aligner.align(word)
+        return Alignments._from_aligner_output(aligner_output)[0]
+
     # ---------------------------------------------------------------------------- #
 
     def bind_id(self, input_id: int, output_id: int):
