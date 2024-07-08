@@ -356,14 +356,17 @@ class Alignments:
         return result
 
 
-    # ---------------------------------------------------------------------------- #
+    # ------------------------- Traversing the alignments ------------------------ #
 
-    def output_ids_for_input(self, node: Node):
+    def output_ids_for_input(self, node: Node) -> List[int]:
         '''
         Returns the IDs of the output nodes that are bound to the input node.
 
         Args:
             node: The input node.
+
+        Returns:
+            List[int]: A list of output node IDs.
         '''
         layer = node.layer
 
@@ -375,12 +378,15 @@ class Alignments:
         
         return layer.bindings.bindings_down[node.id]
     
-    def input_ids_for_output(self, node: Node):
+    def input_ids_for_output(self, node: Node) -> List[int]:
         '''
         Returns the IDs of the input nodes that are bound to the output node.
 
         Args:
             node: The output node.
+
+        Returns:
+            List[int]: A list of output node IDs.
         '''
         layer = node.layer
 
@@ -391,6 +397,138 @@ class Alignments:
             raise Exception('Output node is at the first layer. Cannot traverse any further.')
         
         return layer.bindings.bindings_up[node.id]
+    
+    def output_ids_for_inputs(self, nodes: Sequence[Node], return_respective_lists=False) -> Union[List[int], List[List[int]]]:
+        """
+        Returns a list of output node IDs for a given list of input nodes.
+
+        Args:
+            nodes (Sequence[Node]): The list of input nodes.
+            return_respective_lists (bool, optional): If True, the function will return a list of lists, where each sublist
+                contains the output node IDs corresponding to the input node. If False, the function
+                will return a single list of output node IDs. Defaults to False.
+
+        Returns:
+            List[int]: A list of output node IDs.
+            List[List[int]]: In a special case where return_respective_lists is True, a list of lists of output node IDs.
+
+        Raises:
+            TypeError: If an input node is not within a Layer.
+            Exception: If an output node is at the first layer and cannot traverse any further.
+        """
+        ids = []
+        for node in nodes:
+            (ids.append if return_respective_lists else ids.extend)(self.output_ids_for_input(node))
+        if not return_respective_lists:
+            ids.sort()
+        return ids
+    
+    def input_ids_for_outputs(self, nodes: Sequence[Node], return_respective_lists=False) -> Union[List[int], List[List[int]]]:
+        """
+        Returns a list of input node IDs for a given list of output nodes.
+
+        Args:
+            nodes (Sequence[Node]): The list of output nodes.
+            return_respective_lists (bool, optional): If True, the function will return a list of lists, where each sublist
+                contains the input node IDs corresponding to the output node. If False, the function
+                will return a single list of input node IDs. Defaults to False.
+
+        Returns:
+            List[int]: A list of output node IDs.
+            List[List[int]]: In a special case where return_respective_lists is True, a list of lists of output node IDs.
+
+        Raises:
+            TypeError: If an output node is not within a Layer.
+            Exception: If an input node is at the last layer and cannot traverse any further.
+        """
+        ids = []
+        for node in nodes:
+            (ids.append if return_respective_lists else ids.extend)(self.input_ids_for_output(node))
+        if not return_respective_lists:
+            ids.sort()
+        return ids
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+
+    def get_output_nodes_for_input(self, node: Node) -> List[Node]:
+        """
+        Returns a list of output nodes corresponding to the given input node.
+
+        Args:
+            node (Node): The input node.
+
+        Returns:
+            List[Node]: A list of nodes.
+        
+        Raises:
+            TypeError: If an output node is not within a Layer.
+            Exception: If an input node is at the last layer and cannot traverse any further.
+        """
+        return [Node.id(i) for i in self.output_ids_for_input(node)]
+    
+    def get_input_nodes_for_output(self, node: Node) -> List[Node]:
+        """
+        Returns a list of input node IDs corresponding to the given output node.
+
+        Args:
+            node (Node): The output node.
+
+        Returns:
+            List[Node]: A list of input node IDs.
+
+        Raises:
+            TypeError: If an output node is not within a Layer.
+            Exception: If an input node is at the last layer and cannot traverse any further.
+        """
+        return [Node.id(i) for i in self.input_ids_for_output(node)]
+    
+    def get_output_nodes_for_inputs(self, nodes: Sequence[Node], return_respective_lists=False) -> Union[List[Node], List[List[Node]]]:
+        """
+        Returns a list of output nodes for a given list of input nodes.
+
+        Args:
+            nodes (Sequence[Node]): The list of input nodes.
+            return_respective_lists (bool): Whether to return the output nodes as separate lists.
+
+        Returns:
+            List[Node]: A list of output nodes.
+            List[List[Node]]: In a special case where return_respective_lists is True, a list of lists of output nodes.
+
+        Raises:
+            TypeError: If an output node is not within a Layer.
+            Exception: If an input node is at the last layer and cannot traverse any further.
+        """
+        result = []
+        for node in nodes:
+            (result.append if return_respective_lists else result.extend)(self.get_output_nodes_for_input(node))
+        if not return_respective_lists:
+            result.sort(key=lambda x: x.id)
+        return result
+    
+    def get_input_nodes_for_outputs(self, nodes: Sequence[Node], return_respective_lists=False) -> Union[List[Node], List[List[Node]]]:
+        """
+        Returns a list of input nodes for a given list of output nodes.
+
+        Args:
+            nodes (Sequence[Node]): The list of output nodes.
+            return_respective_lists (bool): Whether to return the input nodes as separate lists.
+
+        Returns:
+            List[Node]: A list of input nodes.
+            List[List[Node]]: In a special case where return_respective_lists is True, a list of lists of input nodes.
+
+        Raises:
+            TypeError: If an input node is not within a Layer.
+            Exception: If an output node is at the last layer and cannot traverse any further.
+        """
+        result = []
+        for node in nodes:
+            (result.append if return_respective_lists else result.extend)(self.get_input_nodes_for_output(node))
+        if not return_respective_lists:
+            result.sort(key=lambda x: x.id)
+        return result
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     
 
 # TODO 07/06/2024: finish this
