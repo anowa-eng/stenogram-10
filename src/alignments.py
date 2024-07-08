@@ -530,5 +530,54 @@ class Alignments:
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     
+    def translate_down(self, nodes: Sequence[Node], amount: int, return_respective_lists=False) -> Union[List[Node], List[List[Node]]]:
+        """
+        Translates a list of nodes down by a given amount.
+
+        Args:
+            nodes (Sequence[Node]): The list of nodes to translate.
+            amount (int): The amount to translate by.
+            return_respective_lists (bool): Whether to return the translated nodes as separate lists.
+
+        Returns:
+            List[Node]: A list of translated nodes.
+            List[List[Node]]: In a special case where return_respective_lists is True, a list of lists of translated nodes.
+
+        Raises:
+            TypeError: If an input or output node is not within a Layer.
+            Exception: If an input node is at the last layer and cannot traverse any further.
+        """
+        if amount == 0:
+            return nodes
+        output_nodes = self.get_output_nodes_for_inputs(nodes, return_respective_lists=return_respective_lists)
+        if return_respective_lists:
+            return [self.translate_down(o, amount - 1) for o in output_nodes]
+        else:
+            return self.translate_down(output_nodes, amount - 1)
+    
+    def translate_up(self, nodes: Sequence[Node], amount: int, return_respective_lists=False) -> Union[List[Node], List[List[Node]]]:
+        """
+        Translates a list of nodes up by a given amount.
+
+        Args:
+            nodes (Sequence[Node]): The list of nodes to translate.
+            amount (int): The amount to translate by.
+            return_respective_lists (bool): Whether to return the translated nodes as separate lists.
+
+        Returns:
+            List[Node]: A list of translated nodes.
+            List[List[Node]]: In a special case where return_respective_lists is True, a list of lists of translated nodes.
+
+        Raises:
+            TypeError: If an input or output node is not within a Layer.
+            Exception: If an input node is at the last layer and cannot traverse any further.
+        """
+        if amount == 0:
+            return nodes
+        input_nodes = self.get_input_nodes_for_outputs(nodes, return_respective_lists=return_respective_lists)
+        if return_respective_lists:
+            return [self.translate_up(i, amount - 1) for i in input_nodes]
+        else:
+            return self.translate_up(input_nodes, amount - 1)
 
 # TODO 07/06/2024: finish this

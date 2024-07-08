@@ -95,4 +95,23 @@ def test_translation():
 
     assert layers.get_input_nodes_for_outputs(nodes[3:6]) == nodes[0:3]
     assert layers.get_input_nodes_for_outputs(nodes[6:9]) == nodes[3:6]
+
+    assert layers.get_output_nodes_for_inputs(nodes[0:3], return_respective_lists=True) == [[nodes[3]], [nodes[4]], [nodes[5]]]
+    assert layers.get_output_nodes_for_inputs(nodes[3:6], return_respective_lists=True) == [[nodes[6]], [nodes[7]], [nodes[8]]]
+
+    assert layers.get_input_nodes_for_outputs(nodes[3:6], return_respective_lists=True) == [[nodes[0]], [nodes[1]], [nodes[2]]]
+    assert layers.get_input_nodes_for_outputs(nodes[6:9], return_respective_lists=True) == [[nodes[3]], [nodes[4]], [nodes[5]]]
+    
+    # ---------------------------------------------------------------------------- #
+
+    assert layers.translate_down(nodes[0:3], 1) == nodes[3:6]
+    assert layers.translate_down(nodes[3:6], 1) == nodes[6:9]
+
+    assert layers.translate_down(nodes[0:3], 1, return_respective_lists=True) == [[nodes[3]], [nodes[4]], [nodes[5]]]
+
+    assert layers.translate_down(nodes[0:3], 2) == nodes[6:9]
+    assert layers.translate_down(nodes[0:3], 2, return_respective_lists=True) == [[nodes[6]], [nodes[7]], [nodes[8]]]
+
+    assert layers.translate_up(nodes[6:9], 2) == nodes[0:3]
+    # assert layers.translate_up(nodes[6:9], 1, return_respective_lists=True) == [[nodes[3]], [nodes[4]], [nodes[5]]]
     
