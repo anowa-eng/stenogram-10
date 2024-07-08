@@ -5,7 +5,6 @@ import subprocess
 
 from g2p_en import G2p
 
-from src.alignments import Alignments
 from tests.configure_logger import configure_logger
 
 
