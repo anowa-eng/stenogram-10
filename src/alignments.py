@@ -1,4 +1,5 @@
 from functools import reduce
+import itertools
 from typing import List, Mapping, Optional, Sequence, Tuple, TypeAlias, Union
 
 from src.aligner import Aligner
