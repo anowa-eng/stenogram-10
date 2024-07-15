@@ -113,5 +113,7 @@ def test_translation():
     assert layers.translate_down(nodes[0:3], 2, return_respective_lists=True) == [[nodes[6]], [nodes[7]], [nodes[8]]]
 
     assert layers.translate_up(nodes[6:9], 2) == nodes[0:3]
-    # assert layers.translate_up(nodes[6:9], 1, return_respective_lists=True) == [[nodes[3]], [nodes[4]], [nodes[5]]]
+    assert layers.translate_up(nodes[6:9], 1, return_respective_lists=True) == [[nodes[3]], [nodes[4]], [nodes[5]]]
+
+    assert layers.translate_to_layer(nodes[3:6], 0) == nodes[0:3]
     
