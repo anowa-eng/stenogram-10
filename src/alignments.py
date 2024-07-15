@@ -18,16 +18,7 @@ class Node(IndexedClass['Node']):
         self.layer: Optional['Layer'] = None
 
     def __repr__(self):
-        return f'Node(data={self.data}, layer={self.layer}, layer_id={self.id})'
-    
-    def __str__(self):
-        str_ = f"Node({self.data})"
-        if self.layer:
-            str_ += f" @ "
-            if self.layer.id != -1:
-                str_ += f"layer {self.layer.id}"
-            str_ += f", id {self.id}"
-        return str_
+        return f'Node(data={self.data}, layer_id={self.id})'
 
 class Layer(IndexedClass['Layer']):
     '''
