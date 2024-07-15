@@ -32,6 +32,8 @@ M2M_ALIGNER_VAR_DIR = M2M_ALIGNER_CONTAINER_DIR / 'var'
 #                                 Aligner class                                #
 # ---------------------------------------------------------------------------- #
 
+# TODO: 07/14/2024: Figure out a way to make the aligner handle punctuation marks correctly
+
 class Aligner:
     '''
     A class for aligning words using the m2m-aligner model.'''
