@@ -226,6 +226,20 @@ class Alignments:
         layer_strs = [self._repr_indent(s, 2) for s in layer_strs]
         return f"Layers: [\n" + '\n'.join(layer_strs) + "\n]"
     
+    # -------------------------------- Add a layer ------------------------------- #
+
+    def add_layer(self):
+        '''
+        Adds a new blank layer to the end of the list of layers.
+        '''
+        self.layers.append(Layer([]))
+        self.layers[-2].bindings.layer_below = self.layers[-1]
+
+        self.layers[-1].bindings = Bindings(
+            anchor=self.layers[-1],
+            layer_above=self.layers[-2]
+        )
+
     # ---------------- Instantiate alignments from aligner output ---------------- #
 
     # Helper functions
