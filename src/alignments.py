@@ -651,5 +651,22 @@ class Alignments:
             return [self.translate_up(i, amount - 1) for i in input_nodes]
         else:
             return self.translate_up(input_nodes, amount - 1)
+    
+    def translate_to_layer(self, nodes: Sequence[Node], layer_number: int, return_respective_lists=False) -> Union[List[Node], List[List[Node]]]:
+        all_layer_ids = [layer.id for layer in self.layers]
+        respective_lists = []
+
+        for node in nodes:
+            idx = all_layer_ids.index(node.layer.id)
+
+            translate = (self.translate_down if idx < layer_number else self.translate_up)
+            amount = abs(idx - layer_number)
+
+            respective_lists.append(translate([node], amount))
+        
+        if return_respective_lists:
+            return respective_lists
+        else:
+            return list(itertools.chain(*respective_lists))
 
 # TODO 07/06/2024: finish this
