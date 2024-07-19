@@ -9,7 +9,7 @@ import subprocess
 from uuid import uuid4
 
 from collections import defaultdict
-from typing import List, Tuple, Union
+from typing import List, Mapping, Tuple, Union
 
 from Aquila_Resolve.text.numbers import normalize_numbers
 from Aquila_Resolve import G2p
@@ -112,9 +112,16 @@ class Aligner2:
     Recognizes the correspondence between grapheme and phoneme.
     '''
 
+    Nodes = list[str]
+    Layer = list[Nodes]
+    Word = list[Layer, Layer]
+    Output = list[Word]
+
+    Pairs = List[Tuple[str, str]]
+
     @staticmethod
     def _pairs_single_inference_tuple(
-            inference: Pronunciation.G2pInferenceTuple):
+            inference: Pronunciation.G2pInferenceTuple) -> Pairs:
         _, words, phones = inference
         words = words.split()
         pairs = list(zip(words, phones))
@@ -133,7 +140,7 @@ class Aligner2:
     # ---------------------------------------------------------------------------- #
 
     @staticmethod
-    def _news_format__single_pair(pair: Tuple[str, str]):
+    def _news_format__single_pair(pair: Tuple[str, str]) -> str:
         print(f'{pair=}')
         graphemes, phonemes = pair
 
@@ -145,7 +152,7 @@ class Aligner2:
         return fmt_graphemes + '\t' + fmt_phonemes
 
     @staticmethod
-    def _news_format(pronunciation: Pronunciation.G2pInferenceTuples):
+    def _news_format(pronunciation: Pronunciation.G2pInferenceTuples) -> str:
         pairs = Aligner2._pairs(pronunciation)
         return '\n'.join(
             Aligner2._news_format__single_pair(pair) for pair in pairs) + '\n'
@@ -153,7 +160,7 @@ class Aligner2:
     # ------------------ Run m2m-aligner (many-to-many aligner) ------------------ #
 
     @staticmethod
-    def _run_m2m_aligner(formatted_content: str, delete=True):
+    def _run_m2m_aligner(formatted_content: str, delete=True) -> Mapping[str, str]:
         uuid_ = uuid4()
 
         input_file_path = M2M_ALIGNER_VAR_DIR / f'in-{uuid_}.txt'
@@ -188,7 +195,7 @@ class Aligner2:
         }
 
     @staticmethod
-    def _split_aligner_output(aligned_data: str) -> List:
+    def _split_aligner_output(aligned_data: str) -> Output:
         aligned_data = aligned_data.split('\n')
         print(aligned_data)
 
