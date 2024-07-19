@@ -1,55 +1,219 @@
 # ---------------------------------------------------------------------------- #
 #                           * * * experimental * * *                           #
 # ---------------------------------------------------------------------------- #
-
+import os
+from pathlib import Path
+from pprint import pprint
 import re
+import subprocess
+from uuid import uuid4
 
 from collections import defaultdict
-from g2p_en.expand import abbreviations, time_norm, number_norm
+from typing import List, Tuple, Union
 
-class Aligner2:
-    _split_re = re.compile(r"[^\w\s']+|\w+")
+from Aquila_Resolve.text.numbers import normalize_numbers
+from Aquila_Resolve import G2p
 
-    def split(text: str) -> list:
-        return Aligner2._split_re.findall(text)
 
-    def _indices(text: str) -> list:
-        result = defaultdict(list)
+class Pronunciation:
+    # Types
+    ExpansionResult = List[Tuple[str, str]]
+    G2pInferenceTuple = Tuple[str, str, str]
+    G2pInferenceTuples = List[G2pInferenceTuple]
 
-        words = text.split()
-        for i, word in enumerate(words):
-            result[word].append(i)
+    _g2p = G2p()
 
-        return dict(result)
+    _split_re = re.compile(
+        r"[!\"#%&()*+,\-./;<=>?@[\\\]^_`{|}~]+|[^!\"#%&()*+,\-./:;<=>?@[\\\]^_`{|}~ ]+"
+    )
+    _g2p_re = re.compile(r"\{[^\}]+\}|[^\{\} ]+")
 
-    def _unexpanded_words(text: str, expanded_text: str):
-        words = text.split()
-        indices = Aligner2._indices(text)
+    @staticmethod
+    def _split(text: str) -> list:
+        '''
+        Splits the text into words using the _split_re regex, with punctuation
+        '''
+        return Pronunciation._split_re.findall(text)
 
-        for word in expanded_text.split():
-            if word in words:
-                idx = indices[word][0]
-                yield (idx, word)
-                indices[word].pop(0)
-            
+    @staticmethod
+    def expand(text: str) -> dict:
+        mapping = Pronunciation._split(text)
 
-    def expand(text: str) -> list:
-        result = text
+        mapping = [
+            (word, normalize_numbers(word) \
+                .replace(':', ' ') \
+                .replace(',', '')) \
+            for word in mapping
+        ]
 
-        result = abbreviations.expand_abbreviations(result)
-        result = time_norm.expand_time(result)
-        result = number_norm.expand_numbers(result)
+        expansion_indices = defaultdict(list)
 
-        result = result.replace(",", "")
-        result = result.replace(":", " ")
+        values = list(zip(*mapping))[1]
 
-        unexpanded_words = Aligner2._unexpanded_words(text, result)
+        value_index = 0
+        for i, expansion in enumerate(values):
+            for j in expansion.split():
+                expansion_indices[i].append(value_index)
+                value_index += 1
 
         return {
-            "result": result,
-            "unexpanded_words": list(zip(*unexpanded_words))
+            "result": chr(32).join(values),
+            "word_mapping": mapping,
+            "idx_mapping": dict(expansion_indices)
         }
+
+    @staticmethod
+    def pronunciation(
+            words: str,
+            return_expansions=False) -> Union[str, G2pInferenceTuples]:
+        expanded = Pronunciation.expand(words)
+
+        inference = Pronunciation._g2p.convert(words)
+
+        if return_expansions:
+            all_word_phonemes = Pronunciation._g2p_re.findall(inference)
+
+            idx_mapping = expanded["idx_mapping"]
+            respective_word_phones = []
+
+            print(all_word_phonemes)
+
+            try:
+                for _, expansion_indices in idx_mapping.items():
+                    respective_word_phones.append(
+                        tuple(all_word_phonemes[i] for i in expansion_indices))
+            except IndexError:
+                return []
+
+            individual_outputs = [
+                *zip(*expanded['word_mapping']), respective_word_phones
+            ]
+
+            print(respective_word_phones)
+
+            return list(zip(*individual_outputs))
+        else:
+            return inference or []
+
 
 # ---------------------------------------------------------------------------- #
 
-print(Aligner2.expand('jargon divert antler 292929 £1050515 time note pliers $3141 51% centipede blind eye gnomes'))
+ALIGNER_DIR = Path(__file__).parent.parent / 'aligner'
+
+M2M_ALIGNER_CONTAINER_DIR = Path(__file__).parent.parent / 'aligner'
+M2M_ALIGNER_DIR = M2M_ALIGNER_CONTAINER_DIR / 'm2m-aligner'
+M2M_ALIGNER_EXECUTABLE = M2M_ALIGNER_DIR / 'm2m-aligner'
+M2M_ALIGNER_MODEL = M2M_ALIGNER_CONTAINER_DIR / 'model/cmudict.txt.m-mAlign.2-2.delX.1-best.conYX.align.model'
+M2M_ALIGNER_VAR_DIR = M2M_ALIGNER_CONTAINER_DIR / 'var'
+
+
+class Aligner2:
+    '''
+    Recognizes the correspondence between grapheme and phoneme.
+    '''
+
+    @staticmethod
+    def _pairs_single_inference_tuple(
+            inference: Pronunciation.G2pInferenceTuple):
+        _, words, phones = inference
+        words = words.split()
+        pairs = list(zip(words, phones))
+        return pairs
+
+    @staticmethod
+    def _pairs(
+        inference_tuples: Pronunciation.G2pInferenceTuples
+    ) -> List[Tuple[str, str]]:
+        pairs = []
+        for inference in inference_tuples:
+            pairs.extend(Aligner2._pairs_single_inference_tuple(inference))
+
+        return pairs
+
+    # ---------------------------------------------------------------------------- #
+
+    @staticmethod
+    def _news_format__single_pair(pair: Tuple[str, str]):
+        print(f'{pair=}')
+        graphemes, phonemes = pair
+
+        fmt_graphemes = ' '.join(graphemes.lower())
+
+        fmt_phonemes = phonemes.removeprefix('{').removesuffix('}')
+        fmt_phonemes = re.sub(r'\d\b', '', fmt_phonemes)
+
+        return fmt_graphemes + '\t' + fmt_phonemes
+
+    @staticmethod
+    def _news_format(pronunciation: Pronunciation.G2pInferenceTuples):
+        pairs = Aligner2._pairs(pronunciation)
+        return '\n'.join(
+            Aligner2._news_format__single_pair(pair) for pair in pairs) + '\n'
+
+    # ------------------ Run m2m-aligner (many-to-many aligner) ------------------ #
+
+    @staticmethod
+    def _run_m2m_aligner(formatted_content: str, delete=True):
+        uuid_ = uuid4()
+
+        input_file_path = M2M_ALIGNER_VAR_DIR / f'in-{uuid_}.txt'
+        output_file_path = M2M_ALIGNER_VAR_DIR / f'out-{uuid_}.txt'
+        unaligned_data_path = M2M_ALIGNER_VAR_DIR / f'out-{uuid_}.txt.err'
+
+        with open(input_file_path, 'w') as file:
+            file.write(formatted_content)
+
+        subprocess.run(
+            f"'{M2M_ALIGNER_EXECUTABLE}' --delX --maxX 2 --maxY 2 --alignerIn '{M2M_ALIGNER_MODEL}' -o '{output_file_path}' -i '{input_file_path}'", cwd=M2M_ALIGNER_CONTAINER_DIR, 
+            shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+        # - - - - - - - - - - - - - - - - - - - - - - - - #
+
+        aligned_data = ''
+
+        with open(output_file_path, 'r') as file:
+            aligned_data = file.read()
+
+        with open(output_file_path, 'r') as file:
+            unaligned_data = file.read()
+        
+        if delete:
+            os.remove(input_file_path)
+            os.remove(output_file_path)
+            os.remove(unaligned_data_path)
+
+        return {
+            "aligned_data": aligned_data,
+            "unaligned_data": unaligned_data
+        }
+
+    @staticmethod
+    def _split_aligner_output(aligned_data: str) -> List:
+        aligned_data = aligned_data.split('\n')
+        print(aligned_data)
+
+        aligned_data = [i.split('\t') for i in aligned_data]
+        print(aligned_data)
+
+        data_split = [
+            [[k.split(':') for k in j.split('|')[:-1]] for j in i] for i in aligned_data
+        ]
+
+        return data_split
+
+# ---------------------------------------------------------------------------- #
+
+print(
+    "hello there! type whatever you want and it will generate a breakdown for you of every word's expansions/phonemes. or type '.exit' to stop."
+)
+
+uinput = ''
+while True:
+    uinput = input('>>> ')
+    if uinput == '.exit':
+        break
+    else:
+        result = Pronunciation.pronunciation(uinput, True)
+        content = Aligner2._news_format(result)
+        output = Aligner2._run_m2m_aligner(content)
+        print(Aligner2._split_aligner_output(output['aligned_data']))
