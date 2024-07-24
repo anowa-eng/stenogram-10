@@ -42,9 +42,11 @@ class _M2MAlignerService:
     '''
     A class with utility functions to run m2m-aligner and extract its output.
     '''
-    logger = configure_logger('aligner4.aligner._M2MAlignerService')
 
-    async def m2m_aligner(**kwargs) -> None:
+    def __init__(self) -> None:
+        self.logger = configure_logger(f'm2m-aligner_service:{self.__name__}')
+
+    async def m2m_aligner(self, **kwargs) -> None:
         """
         Runs the M2M aligner with the provided arguments.
         
@@ -65,13 +67,13 @@ class _M2MAlignerService:
         result = subprocess.run(cmd, cwd=M2M_ALIGNER_CONTAINER_DIR, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         if result == 1:
-            _M2MAlignerService.logger.error(result.stderr.decode('utf-8'))
+            self.logger.error(result.stderr.decode('utf-8'))
         else:
-            _M2MAlignerService.logger.info(result.stderr.decode('utf-8'))
+            self.logger.info(result.stderr.decode('utf-8'))
 
         return result
 
-    async def _align_file_content(formatted_content: str, delete=True) -> Mapping[str, str]:
+    async def _align_file_content(self, formatted_content: str, delete=True) -> Mapping[str, str]:
         """
         Runs the M2M aligner with the provided formatted content, and returns the aligned and unaligned data.
         
@@ -93,7 +95,7 @@ class _M2MAlignerService:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - #
 
-        result = await _M2MAlignerService.m2m_aligner(
+        result = await self.m2m_aligner(
             init=M2M_ALIGNER_MODEL,
             maxX=2,
             maxY=2,
@@ -117,12 +119,11 @@ class _M2MAlignerService:
                 os.remove(unaligned_data_path)
 
         return {
-            "aligned_data": _M2MAlignerService._split_aligner_output(aligned_data),
+            "aligned_data": self._split_aligner_output(aligned_data),
             "unaligned_data": unaligned_data
         }
 
-    @staticmethod
-    def _split_aligner_output(aligned_data: str):
+    def _split_aligner_output(self, aligned_data: str):
         aligned_data = aligned_data.split('\n')
 
         aligned_data = [i.split('\t') for i in aligned_data]
@@ -134,11 +135,10 @@ class _M2MAlignerService:
         return data_split
     
 
-    @staticmethod
-    async def align_single_word_g2p(g2p_pair: Tuple[str, str], delete=True):
+    async def align_single_word_g2p(self, g2p_pair: Tuple[str, str], delete=True):
         formatted_content = Aligner4Formatter.format(*g2p_pair)
 
-        aligned_data = (await _M2MAlignerService._align_file_content(formatted_content, delete=delete))['aligned_data']
+        aligned_data = (await self._align_file_content(formatted_content, delete=delete))['aligned_data']
 
         if aligned_data:
             return aligned_data[0]
