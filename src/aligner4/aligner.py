@@ -149,7 +149,9 @@ class _M2MAlignerService:
 #                                    testing                                   #
 # ---------------------------------------------------------------------------- #
 
-test_p = Pronunciation('twenty').pronunciation.__next__()
-test_a = _M2MAlignerService().align_graphemes_to_phonemes([(test_p.expanded_form, test_p.pronunciation[0])], delete=False)
+async def main():
+    test_p = Pronunciation('shrine').pronunciation.__next__()
+    test_a = await _M2MAlignerService().align_single_word_g2p((test_p.expanded_form, test_p.pronunciation[0]), delete=False)
+    print(test_a)
 
-print(test_a)
+asyncio.run(main())
