@@ -1,3 +1,5 @@
+import asyncio
+from itertools import chain
 import os
 from pathlib import Path
 import re
@@ -5,7 +7,8 @@ import subprocess
 from typing import List, Mapping, Tuple
 from uuid import uuid4
 
-from src.aligner4.pronunciation import Pronunciation, SingleMatchPronunciation
+from src.aligner4.pronunciation import Pronunciation
+from tests.configure_logger import configure_logger
 
 
 M2M_ALIGNER_CONTAINER_DIR = Path(__file__).parent.parent.parent / 'aligner'
@@ -13,7 +16,6 @@ M2M_ALIGNER_DIR = M2M_ALIGNER_CONTAINER_DIR / 'm2m-aligner'
 M2M_ALIGNER_EXECUTABLE = M2M_ALIGNER_DIR / 'm2m-aligner'
 M2M_ALIGNER_MODEL = M2M_ALIGNER_CONTAINER_DIR / 'model/cmudict.txt.m-mAlign.2-2.delX.1-best.conYX.align.model'
 M2M_ALIGNER_VAR_DIR = M2M_ALIGNER_CONTAINER_DIR / 'var'
-
 
 class Aligner4Formatter:
     @staticmethod
