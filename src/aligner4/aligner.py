@@ -133,14 +133,15 @@ class _M2MAlignerService:
     
 
     @staticmethod
-    def align_graphemes_to_phonemes(g2p_pairs: List[Tuple[str, str]], delete=True):
-        formatted_content = '\n'.join([
-            Aligner4Formatter.format(graphemes, phonemes)
-            for graphemes, phonemes in g2p_pairs
-        ])
+    async def align_single_word_g2p(g2p_pair: Tuple[str, str], delete=True):
+        formatted_content = Aligner4Formatter.format(*g2p_pair)
 
-        return _M2MAlignerService._align_file_content(formatted_content)
+        aligned_data = (await _M2MAlignerService._align_file_content(formatted_content, delete=delete))['aligned_data']
 
+        if aligned_data:
+            return aligned_data[0]
+        else:
+            return []
 
 
 
