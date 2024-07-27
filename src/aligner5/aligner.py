@@ -52,7 +52,7 @@ class WordGroupAligner:
         
     # ---------------------------------------------------------------------------- #
 
-    async def align(self):
+    async def align(self) -> None:
         self.write_to_file()
         output_file = await self.m2m_aligner_output()
 

@@ -4,6 +4,15 @@ from Aquila_Resolve.text import numbers
 
 from src.aligner5.word import Word
 
+# ---------------------------------------------------------------------------- #
+#                               Type definitions                               #
+# ---------------------------------------------------------------------------- #
+
+class Processor:
+    Nodes = list[str]
+    Layer = list[Nodes]
+    AlignerWord = list[Layer, Layer]
+    Output = list[AlignerWord]
 
 # ---------------------------------------------------------------------------- #
 #                            Preprocessing utilities                           #
@@ -60,7 +69,7 @@ def output_line_is_word(word: Word, output_line: str) -> bool:
 split_grapheme_line_re = re.compile(r'[\|:]|[^\|:]')
 punctuation_letter_cluster_re = re.compile(r'[^\w]*\w')
 
-def split_word_into_punctuation_letter_clusters(word_long_form: str):
+def split_word_into_punctuation_letter_clusters(word_long_form: str) -> list[str]:
     return re.findall(punctuation_letter_cluster_re, word_long_form)
 
 def re_add_disallowed_m2m_aligner_characters(word: Word, grapheme_line: str) -> str:
@@ -71,8 +80,7 @@ def re_add_disallowed_m2m_aligner_characters(word: Word, grapheme_line: str) -> 
 
     return ''.join(fixed_output)
 
-Output = list[list[list[list[str]]]]
-def split_aligner_output(aligned_data: str) -> Output:
+def split_aligner_output(aligned_data: str) -> Processor.Output:
     aligned_data = aligned_data.split('\n')
 
     aligned_data = [i.split('\t') for i in aligned_data]
@@ -84,7 +92,7 @@ def split_aligner_output(aligned_data: str) -> Output:
     return data_split
 
 
-def postprocess(word: Word, aligner_line: str):
+def postprocess(word: Word, aligner_line: str) -> Processor.Output:
     aligner_line = re_add_disallowed_m2m_aligner_characters(word, aligner_line[:-1])
     aligner_output = split_aligner_output(aligner_line)[0]
 
