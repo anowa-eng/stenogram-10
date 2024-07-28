@@ -172,6 +172,100 @@ class Bindings:
         if output_id not in self.bindings_down[input_id]:
             self.bindings_down[input_id].append(output_id)
 
+    # -------------------------- Grouping and ungrouping ------------------------- #
+
+    # If node A is bound to nodes B, C, and D, and node E is bound to any of the
+    # three nodes B, C, or D, there is an option to automatically include Node E
+    # with Node A in a group of input nodes that go to all three nodes
+    @staticmethod
+    def group(bindings, by_common_singular_inputs=False):
+        '''
+        Groups a dictionary of bindings into a list of (input_id, output_id) tuples.
+
+        Args:
+            bindings: The dictionary of bindings.
+            by_common_singular_inputs: If True, all inputs that share any single output will be grouped together.
+        '''
+
+        result = {}
+
+        outputs = []
+        for output in bindings.values():
+            if output not in outputs:
+                outputs.append(output)
+
+        # groups the outputs by an input.
+        # implemented RECURSIVELY - to prevent errors when changing
+        def group_outputs(i) -> None:
+            # here's our base case:
+            if i == len(outputs):
+                return  # stop when reaching the end.
+
+            output = outputs[i]
+
+            def list_contains_number_in_output(lst: Sequence[int]) -> bool:
+                return any(
+                    num in output
+                    for num in lst
+                )
+
+            bindings_with_output: dict[int, list[int]] = {
+                i: o \
+                for i, o in bindings.items()
+                if (
+                    list_contains_number_in_output(o) # condition
+                    if by_common_singular_inputs
+                    else (o == output)
+                )
+            } # inputs that share this output. there has to be at least one.
+            print(f'{bindings_with_output=}')
+
+            if by_common_singular_inputs:
+                # get ALL the outputs
+                output = reduce(
+                    lambda a, b: list({ *a, *b }),
+                    bindings_with_output.values()
+                )
+
+            inputs_sharing_output = []
+            # build a tuple with all these input(s)
+            for input_ in bindings_with_output:
+                inputs_sharing_output.append(input_)
+            result[tuple(inputs_sharing_output)] = output
+            # convert inputs_sharing-output to a tuple
+            # using it as a key
+
+            group_outputs(i + 1)  # keep going
+
+        group_outputs(0)
+
+        return result
+
+    @staticmethod
+    def ungroup_bindings(bindings: 'Bindings.Dictionary', is_sorted=True) -> List[Tuple[int, int]]:
+        # let's keep this function for now and see if it's useful
+        # if it's not we'll remove it later
+
+        '''
+        Ungroups a dictionary of bindings into a list of (input_id, output_id) tuples.
+
+        Args:
+            bindings: The dictionary of bindings.
+            is_sorted: Whether the dictionary should be sorted.
+        '''
+        result = []
+
+        sorted_bindings = {}
+        if is_sorted:
+            for input_id, output_ids in sorted(bindings.items(), key=lambda x: x[0]):
+                output_ids.sort()
+                sorted_bindings[input_id] = output_ids
+            bindings = sorted_bindings
+
+        for input_id, output_ids in bindings.items():
+            result.extend((input_id, o) for o in output_ids)
+        
+        return result
 
 # ---------------------------------------------------------------------------- #
 
@@ -338,100 +432,6 @@ class Alignments:
             output_node: The output node (the node that is being bound).
         '''
         self.bind_id(input_node.id, output_node.id)
-
-    # ---------------------------------------------------------------------------- #
-
-    def ungroup_bindings(self, bindings: Bindings.Dictionary, is_sorted=True):
-        # let's keep this function for now and see if it's useful
-        # if it's not we'll remove it later
-
-        '''
-        Ungroups a dictionary of bindings into a list of (input_id, output_id) tuples.
-
-        Args:
-            bindings: The dictionary of bindings.
-            is_sorted: Whether the dictionary should be sorted.
-        '''
-        result = []
-
-        sorted_bindings = {}
-        if is_sorted:
-            for input_id, output_ids in sorted(bindings.items(), key=lambda x: x[0]):
-                output_ids.sort()
-                sorted_bindings[input_id] = output_ids
-            bindings = sorted_bindings
-
-        for input_id, output_ids in bindings.items():
-            result.extend((input_id, o) for o in output_ids)
-        
-        return result
-
-    # If node A is bound to nodes B, C, and D, and node E is bound to any of the
-    # three nodes B, C, or D, there is an option to automatically include Node E
-    # with Node A in a group of input nodes that go to all three nodes
-    @staticmethod
-    def _group_bindings(bindings, by_common_singular_inputs=False):
-        '''
-        Groups a dictionary of bindings into a list of (input_id, output_id) tuples.
-
-        Args:
-            bindings: The dictionary of bindings.
-            by_common_singular_inputs: If True, all inputs that share any single output will be grouped together.
-        '''
-
-        result = {}
-
-        outputs = []
-        for output in bindings.values():
-            if output not in outputs:
-                outputs.append(output)
-
-        # groups the outputs by an input.
-        # implemented RECURSIVELY - to prevent errors when changing
-        def group_outputs(i) -> None:
-            # here's our base case:
-            if i == len(outputs):
-                return  # stop when reaching the end.
-
-            output = outputs[i]
-
-            def list_contains_number_in_output(lst: Sequence[int]) -> bool:
-                return any(
-                    num in output
-                    for num in lst
-                )
-
-            bindings_with_output: dict[int, list[int]] = {
-                i: o \
-                for i, o in bindings.items()
-                if (
-                    list_contains_number_in_output(o) # condition
-                    if by_common_singular_inputs
-                    else (o == output)
-                )
-            } # inputs that share this output. there has to be at least one.
-            print(f'{bindings_with_output=}')
-
-            if by_common_singular_inputs:
-                # get ALL the outputs
-                output = reduce(
-                    lambda a, b: list({ *a, *b }),
-                    bindings_with_output.values()
-                )
-
-            inputs_sharing_output = []
-            # build a tuple with all these input(s)
-            for input_ in bindings_with_output:
-                inputs_sharing_output.append(input_)
-            result[tuple(inputs_sharing_output)] = output
-            # convert inputs_sharing-output to a tuple
-            # using it as a key
-
-            group_outputs(i + 1)  # keep going
-
-        group_outputs(0)
-
-        return result
 
 
     # ------------------------- Traversing the alignments ------------------------ #

@@ -1,7 +1,7 @@
 import asyncio
 from src.aligner5.aligner import align_text
 from src.aligner5.word import Word
-from src.alignments import Alignments, Layer, Node
+from src.alignments import Alignments, Bindings, Layer, Node
 
 # ---------------------------------------------------------------------------- #
 #                          Create alignments from word                         #
@@ -41,7 +41,7 @@ def get_node_ids(ids: list[int]) -> list[Node]:
     return tuple(Node.id(id) for id in ids)
 
 def node_bindings_down(layer: Layer) -> str:
-    grouped_bindings = Alignments._group_bindings(layer.bindings.bindings_down)
+    grouped_bindings = Bindings.group(layer.bindings.bindings_down)
 
     grouped_bindings = {
         get_node_ids(k): get_node_ids(v) \
