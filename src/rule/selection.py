@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Callable, List, Union
-from src.alignments import Layer, Node
+from src.alignments.alignments import Layer, Node
 
 # ---------------------------------------------------------------------------- #
 #                     Selection class and related functions                    #

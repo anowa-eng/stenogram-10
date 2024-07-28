@@ -1,6 +1,6 @@
 
 
-from src.alignments import Layer, Node
+from src.alignments.alignments import Layer, Node
 from src.rule.selection import Selection, matches, series
 from tests.tools import reset, sample_nodes
 

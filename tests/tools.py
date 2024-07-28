@@ -1,5 +1,5 @@
 
-from src.alignments import Node, Layer
+from src.alignments.alignments import Node, Layer
 
 
 def sample_nodes(i):

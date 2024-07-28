@@ -1,7 +1,7 @@
 # not even a pytest
 
 from src.aligner import Aligner
-from src.alignments import Alignments, bindings_logger
+from src.alignments.alignments import Alignments, bindings_logger
 
 uinput = ""
 

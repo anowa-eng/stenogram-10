@@ -1,7 +1,7 @@
 import asyncio
 from src.aligner5.aligner import align_text
 from src.aligner5.word import Word
-from src.alignments import Alignments, Bindings, Layer, Node
+from src.alignments.alignments import Alignments, Bindings, Layer, Node
 
 # ---------------------------------------------------------------------------- #
 #                          Create alignments from word                         #
