@@ -102,11 +102,3 @@ async def align_text(text: str) -> list[Word]:
 
     return words
 
-# ---------------------------------------------------------------------------- #
-
-async def test1():
-    print(await align_text('destroying my mental well being with programming sure is fun!!'))
-
-
-
-asyncio.run(test1())
