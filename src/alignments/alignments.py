@@ -1,8 +1,11 @@
+import asyncio
 from functools import reduce
 import itertools
 from typing import List, Mapping, Optional, Sequence, Tuple, TypeAlias, Union
 
 from src.aligner import Aligner
+from src.aligner5.aligner import align_text
+from src.aligner5.word import Word
 from src.class_register import IndexedClass, indexed
 from tests.configure_logger import configure_logger
 
@@ -266,8 +269,61 @@ class Bindings:
             result.extend((input_id, o) for o in output_ids)
         
         return result
+    
+    # ---------------------------------- Padding --------------------------------- #
+
+    def all_node_bindings(self, direction: str) -> 'Bindings.Dictionary':
+        if direction not in ['up', 'down']:
+            raise ValueError(f"direction must be 'up' or 'down', not '{direction}'")
+        
+        bindings = None
+
+        if direction == 'up':
+            bindings = self.bindings_up
+        elif direction == 'down':
+            bindings = self.bindings_down
+
+        all_node_ids = [node.id for node in self.anchor.nodes if node.id not in bindings.keys()]
+
+        bindings.update({
+            node_id: [] for node_id in all_node_ids
+        })
+
+        return bindings
 
 # ---------------------------------------------------------------------------- #
+#                               Alignments class                               #
+# ---------------------------------------------------------------------------- #
+
+# ----------------------------- Helper functions ----------------------------- #
+
+def node_bindings_down(layer: Layer) -> str:
+    grouped_bindings = Bindings.group(layer.bindings.all_node_bindings('down'))
+
+    grouped_bindings = {
+        Node.ids(k): Node.ids(v) \
+            for k, v in grouped_bindings.items()
+    }
+    return grouped_bindings
+
+def compact_fmt_node_groups(nodes: tuple[Node]) -> str:
+    # for a single string of nodes
+    return '|'.join([':'.join([node.data for node in collection_g]) for collection_g in nodes])
+
+def compact_layer_str(layer: Layer) -> str:
+    # for a single layer
+    node_bindings_down_ = node_bindings_down(layer)
+
+    graphemes = compact_fmt_node_groups(node_bindings_down_.keys())
+    phonemes = compact_fmt_node_groups(node_bindings_down_.values())
+
+    return f'[layer #{layer.id}] {graphemes}\t-> [layer #{layer.id + 1}] {phonemes}'
+
+def compact_alignments_str(alignments: 'Alignments') -> str:
+    # for an Alignments object, not including the last layer
+    return '\n'.join(compact_layer_str(layer) for layer in alignments.layers[:-1])
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 
 class Alignments:
     '''
@@ -302,15 +358,7 @@ class Alignments:
             l.bindings = bindings
 
     def __repr__(self):
-        return f'Layers({self.layers})'
-    
-    def _repr_indent(self, str_: str, spaces: int):
-        return "\n".join([chr(32) * spaces + s for s in str_.split("\n")])
-    
-    def __str__(self):
-        layer_strs = [('\n' + str(l)) for l in self.layers]
-        layer_strs = [self._repr_indent(s, 2) for s in layer_strs]
-        return f"Layers: [\n" + '\n'.join(layer_strs) + "\n]"
+        return 'Alignments( ' + compact_alignments_str(self) + ' )'
     
     # -------------------------------- Add a layer ------------------------------- #
 
@@ -328,70 +376,37 @@ class Alignments:
 
     # ---------------- Instantiate alignments from aligner output ---------------- #
 
-    # Helper functions
+    @staticmethod
+    def alignments_from_word(word: Word) -> 'Alignments':
+        if word.alignments:
+            alignments = Alignments(2)
+
+            graphemes, phonemes = word.alignments
+
+            for grapheme_collection, phoneme_collection in zip(graphemes, phonemes):
+                g_nodes = [Node(grapheme) for grapheme in grapheme_collection]
+                p_nodes = [Node(phoneme) for phoneme in phoneme_collection]
+
+                alignments.layers[0].extend(g_nodes)
+                alignments.layers[1].extend(p_nodes)
+
+                # Bind the nodes to each other
+                for g in g_nodes:
+                    for p in p_nodes:
+                        alignments.bind(g, p)
+        
+            return alignments
+        
+        else:
+            raise ValueError("Word does not have alignments.")
 
     @staticmethod
-    def _from_aligner_word(aligner_output: Aligner.Word) -> 'Alignments':
-        '''
-        Instantiates an Alignments object from the output of a single word that was run through the Aligner.
-
-        Args:
-            aligner_output: A single item from the output of an m2m-aligner run.
-        '''
-
-        # TODO (after detox): Add support for multiple aligner outputs
-
-        alignments = Alignments(2) # two layers from grapheme -> phoneme
-
-        nodes = zip(*aligner_output)
-
-        for (graphemes, phonemes) in nodes:
-            g_nodes = [Node(g) for g in graphemes]
-            p_nodes = [Node(p) for p in phonemes if p != '_']
-            alignments.layers[0].extend(g_nodes)
-            alignments.layers[1].extend(p_nodes)
-
-            # Bind the nodes to each other
-            for g in g_nodes:
-                for p in p_nodes:
-                    alignments.bind(g, p)
-
-        return alignments
-
-    @staticmethod
-    def _from_aligner_output(aligner_output: Aligner.Output) -> 'Alignments':
-        '''
-        Instantiates an Alignments object from the output of an m2m-aligner run.
-
-        Args:
-            aligner_output: The output of an m2m-aligner run.
-        '''
-        aligner_output = [Alignments._from_aligner_word(w) for w in aligner_output]
-        return aligner_output
-
-    # Public methods
+    def alignments_from_words(words: list[Word]) -> 'Alignments':
+        return [Alignments.alignments_from_word(word) for word in words]
     
     @staticmethod
-    def from_phrase(phrase: str) -> 'Alignments':
-        '''
-        Instantiates an Alignments object from a phrase.
-
-        Args:
-            phrase: The phrase to be aligned.
-        '''
-        aligner_output = Aligner.align(phrase)
-        return Alignments._from_aligner_output(aligner_output)
-    
-    @staticmethod
-    def from_word(word: str) -> 'Alignments':
-        '''
-        Instantiates an Alignments object from a word.
-
-        Args:
-            word: The word to be aligned.
-        '''
-        aligner_output = Aligner.align(word)
-        return Alignments._from_aligner_output(aligner_output)[0]
+    async def alignments_from_text(text: str) -> 'Alignments':
+        return Alignments.alignments_from_words(await align_text(text))
 
     # ---------------------------------------------------------------------------- #
 
@@ -676,3 +691,6 @@ class Alignments:
             return list(itertools.chain(*respective_lists))
 
 # TODO 07/06/2024: finish this
+# ---------------------------------------------------------------------------- #
+
+print(asyncio.run(Alignments.alignments_from_text("maneuver")))

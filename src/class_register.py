@@ -1,4 +1,4 @@
-from typing import Generic, List, Mapping, Type, TypeVar
+from typing import Generic, List, Mapping, Sequence, Type, TypeVar
 
 _registry: Mapping[str, list] = {}
 
@@ -50,6 +50,10 @@ class IndexedClass(Generic[T]):
     @classmethod
     def id(cls: Type[T], id: int) -> T:
         return cls.registry[id]
+    
+    @classmethod
+    def ids(cls: Type[T], ids: Sequence[int]) -> List[T]:
+        return tuple(cls.registry[id] for id in ids)
     
     @classmethod
     def reset_all_id(cls: Type[T]) -> None:
