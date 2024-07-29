@@ -21,6 +21,10 @@ class Selection:
     layer: Layer
     selection: field(default=set())
 
+    @property
+    def all(self) -> 'Selection':
+        return Selection(self.layer, { node.id for node in self.layer.nodes })
+
     def __str__(self) -> str:
         return f'Selection for Layer #{self.layer.id}: {self.selection}'
     
@@ -38,6 +42,9 @@ class Selection:
 
     def __xor__(self, other: 'Selection') -> 'Selection':
         return Selection(self.layer, self.selection ^ other.selection)
+    
+    def __invert__(self) -> 'Selection':
+        return self.all - self
 
     # ---------------------------- Running a condition --------------------------- #
 
