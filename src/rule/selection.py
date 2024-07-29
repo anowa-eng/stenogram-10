@@ -99,7 +99,7 @@ INITIAL = 0
 MEDIAL = 1
 FINAL = 2
 
-def series(values: List, position: int = -1) -> Selection:
+def __series(values: List, position: int = -1) -> Selection:
     def wrapper(layer: Layer) -> bool:
 
         selection = set()
@@ -130,8 +130,13 @@ def series(values: List, position: int = -1) -> Selection:
 
     return wrapper
 
-def matches(value) -> Selection:
+def __matches(value) -> Selection:
     def wrapper(layer: Layer) -> bool:
         return Selection.select(lambda node: node.data == value, layer)
     
     return wrapper
+
+# - - - - - - - - - - - - - - -  - - -  - - - - - - #
+
+series = SelectionFactory(__series)
+matches = SelectionFactory(__matches)
