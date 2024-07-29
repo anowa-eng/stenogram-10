@@ -1,9 +1,9 @@
 import asyncio
+from copy import deepcopy
 from functools import reduce
 import itertools
 from typing import List, Mapping, Optional, Sequence, Tuple, TypeAlias, Union
 
-from src.aligner import Aligner
 from src.aligner5.aligner import align_text
 from src.aligner5.word import Word
 from src.class_register import IndexedClass, indexed
@@ -278,10 +278,7 @@ class Bindings:
         
         bindings = None
 
-        if direction == 'up':
-            bindings = self.bindings_up
-        elif direction == 'down':
-            bindings = self.bindings_down
+        bindings = deepcopy(self.bindings_up if direction == 'up' else self.bindings_down)
 
         all_node_ids = [node.id for node in self.anchor.nodes if node.id not in bindings.keys()]
 
