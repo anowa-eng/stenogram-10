@@ -4,8 +4,8 @@ from functools import reduce
 import itertools
 from typing import List, Mapping, Optional, Sequence, Tuple, TypeAlias, Union
 
-from src.aligner5.aligner import align_text
-from src.aligner5.word import Word
+from src.aligner.aligner import align_text
+from src.aligner.word import Word
 from src.class_register import IndexedClass, indexed
 from tests.configure_logger import configure_logger
 

@@ -4,9 +4,9 @@ from dataclasses import dataclass, field
 import re
 from uuid import uuid4
 
-from src.aligner5 import m2m_aligner
-from src.aligner5.process import fmt_input_word, fmt_phonemes, output_line_is_word, postprocess
-from src.aligner5.word import Word
+from src.aligner import m2m_aligner
+from src.aligner.process import fmt_input_word, fmt_phonemes, output_line_is_word, postprocess
+from src.aligner.word import Word
 
 def generate_filename(mode: str, func=uuid4) -> str:
     return str(m2m_aligner.VAR_DIR) + '/' + mode + '-' + str(func())

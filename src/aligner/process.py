@@ -2,7 +2,7 @@ import re
 
 from Aquila_Resolve.text import numbers
 
-from src.aligner5.word import Word
+from src.aligner.word import Word
 
 # ---------------------------------------------------------------------------- #
 #                               Type definitions                               #
