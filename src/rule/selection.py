@@ -90,7 +90,7 @@ class SelectionFactory:
     def __xor__(self, other: 'SelectionFactory') -> 'SelectionFactory':
         return SelectionFactory(lambda *args, **kwargs: self(*args, **kwargs) ^ other(*args, **kwargs))
     
-    def __invert__(self, other: 'SelectionFactory') -> 'SelectionFactory':
+    def __invert__(self) -> 'SelectionFactory':
         return SelectionFactory(lambda *args, **kwargs: ~(self(*args, **kwargs)))
     
 # --------------------------------- Functions -------------------------------- #
@@ -99,7 +99,7 @@ INITIAL = 0
 MEDIAL = 1
 FINAL = 2
 
-def series(values: List, position: int = -1) -> Selection:
+def __series(values: List, position: int = -1) -> Selection:
     def wrapper(layer: Layer) -> bool:
 
         selection = set()
@@ -128,10 +128,15 @@ def series(values: List, position: int = -1) -> Selection:
         
         return Selection(layer, selection)
 
-    return SelectionFactory(wrapper)
+    return wrapper
 
-def matches(value) -> Selection:
+def __matches(value) -> Selection:
     def wrapper(layer: Layer) -> bool:
         return Selection.select(lambda node: node.data == value, layer)
     
-    return SelectionFactory(wrapper)
+    return wrapper
+
+# - - - - - - - - - - - - - - -  - - -  - - - - - - #
+
+series = SelectionFactory(__series)
+matches = SelectionFactory(__matches)
