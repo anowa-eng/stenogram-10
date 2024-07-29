@@ -63,8 +63,8 @@ class SelectionFactory:
 
     condition: Callable[[Layer], Selection]
 
-    def __call__(self, layer: Layer) -> Selection:
-        return self.condition(layer)
+    def __call__(self, *args, **kwargs) -> Selection:
+        return self.condition(*args, **kwargs)
     
     def __str__(self) -> str:
         return f'SelectionFactory: {self.condition}'
@@ -72,19 +72,19 @@ class SelectionFactory:
     # ---------------------------------------------------------------------------- #
 
     def __and__(self, other: 'SelectionFactory') -> 'SelectionFactory':
-        return SelectionFactory(lambda layer: self(layer) & other(layer))
+        return SelectionFactory(lambda *args, **kwargs: self(*args, **kwargs) & other(*args, **kwargs))
     
     def __or__(self, other: 'SelectionFactory') -> 'SelectionFactory':
-        return SelectionFactory(lambda layer: self(layer) | other(layer))
+        return SelectionFactory(lambda *args, **kwargs: self(*args, **kwargs) | other(*args, **kwargs))
     
     def __sub__(self, other: 'SelectionFactory') -> 'SelectionFactory':
-        return SelectionFactory(lambda layer: self(layer) - other(layer))
+        return SelectionFactory(lambda *args, **kwargs: self(*args, **kwargs) - other(*args, **kwargs))
     
     def __xor__(self, other: 'SelectionFactory') -> 'SelectionFactory':
-        return SelectionFactory(lambda layer: self(layer) ^ other(layer))
+        return SelectionFactory(lambda *args, **kwargs: self(*args, **kwargs) ^ other(*args, **kwargs))
     
     def __invert__(self, other: 'SelectionFactory') -> 'SelectionFactory':
-        return SelectionFactory(lambda layer: ~(self(layer)))
+        return SelectionFactory(lambda *args, **kwargs: ~(self(*args, **kwargs)))
     
 # --------------------------------- Functions -------------------------------- #
 
