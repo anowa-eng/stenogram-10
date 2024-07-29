@@ -50,6 +50,41 @@ class Selection:
             return Selection(layer, { node.id for node in nodes if condition(node) })
         else:
             return Selection(layer, { node.id for i, node in enumerate(nodes) if condition(i, nodes) })
+        
+# ---------------------------------------------------------------------------- #
+#                            SelectionFactory class                            #
+# ---------------------------------------------------------------------------- #
+
+@dataclass
+class SelectionFactory:
+    '''
+    Factory class for creating Selection objects.
+    '''
+
+    condition: Callable[[Layer], Selection]
+
+    def __call__(self, layer: Layer) -> Selection:
+        return self.condition(layer)
+    
+    def __str__(self) -> str:
+        return f'SelectionFactory: {self.condition}'
+    
+    # ---------------------------------------------------------------------------- #
+
+    def __and__(self, other: 'SelectionFactory') -> 'SelectionFactory':
+        return SelectionFactory(lambda layer: self(layer) & other(layer))
+    
+    def __or__(self, other: 'SelectionFactory') -> 'SelectionFactory':
+        return SelectionFactory(lambda layer: self(layer) | other(layer))
+    
+    def __sub__(self, other: 'SelectionFactory') -> 'SelectionFactory':
+        return SelectionFactory(lambda layer: self(layer) - other(layer))
+    
+    def __xor__(self, other: 'SelectionFactory') -> 'SelectionFactory':
+        return SelectionFactory(lambda layer: self(layer) ^ other(layer))
+    
+    def __invert__(self, other: 'SelectionFactory') -> 'SelectionFactory':
+        return SelectionFactory(lambda layer: ~(self(layer)))
     
 # --------------------------------- Functions -------------------------------- #
 
