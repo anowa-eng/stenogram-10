@@ -1,4 +1,4 @@
-from src.alignments.alignments import Layer, Alignments
+from src.alignments.alignments import Bindings, Layer, Alignments
 from src.class_register import _registry
 from tests.configure_logger import configure_logger
 from tests.tools import sample_nodes, reset
@@ -152,6 +152,6 @@ def test_grouping():
     assert layers.input_ids_for_output(g) == [d.id]
 
     bindings_down = layers.layers[0].bindings.bindings_down
-    assert Alignments._group_bindings(bindings_down, by_common_singular_inputs=True) \
+    assert Bindings.group(bindings_down, by_common_singular_inputs=True) \
         == {(a.id, b.id): [d.id],
             (c.id,): [e.id, f.id]}
